@@ -7,161 +7,112 @@
     <link rel="stylesheet" type="text/css" href="styles/grapheditor.css">
     <script src="js/bootstrap.js"></script>
     <style>
-        #geInfo { display: none; }
-        #diagram-selector {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 999;
-            background: #2a2a2a; color: #fff; padding: 6px 12px;
+        #diagram-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: #2a2a2a; color: #fff; padding: 5px 12px;
             font-family: Arial, sans-serif; font-size: 13px;
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: center; gap: 8px;
             border-bottom: 1px solid #555;
         }
-        #diagram-selector select {
-            background: #444; color: #fff; border: 1px solid #666;
-            padding: 3px 8px; border-radius: 3px; flex: 1; max-width: 400px;
-        }
-        #diagram-selector button {
-            background: #d89000; color: #fff; border: none;
-            padding: 4px 12px; border-radius: 3px; cursor: pointer;
-        }
-        #diagram-selector button:hover { background: #e8a010; }
-        #diagram-selector .status {
-            color: #8f8; font-size: 11px; margin-left: auto;
-        }
-        body.geEditor { padding-top: 32px; }
+        #diagram-bar select { background:#444; color:#fff; border:1px solid #666; padding:2px 8px; border-radius:3px; }
+        #diagram-bar button { background:#d89000; color:#fff; border:none; padding:3px 10px; border-radius:3px; cursor:pointer; }
+        #diagram-bar .msg { font-size:11px; margin-left:auto; }
+        body.geEditor { padding-top: 30px; }
+        #geInfo { display:none; }
     </style>
 </head>
 <body class="geEditor geClassic">
-    <div id="diagram-selector">
-        <span>📐 Diagram:</span>
-        <select id="file-select"></select>
+    <div id="diagram-bar">
+        <span>📐</span>
+        <select id="file-select"><option value="">Loading...</option></select>
         <button id="load-btn">Load</button>
-        <span id="diagram-status" class="status">● Connected</span>
+        <span id="status" class="msg">Ready</span>
     </div>
-
-    <div id="geInfo">
-        <div class="geBlock">
-            <h1>drawio AI Editor</h1>
-            <p>Select a diagram from the dropdown above.</p>
-            <h2 id="geStatus">Loading... <img src="images/spin.gif"/></h2>
-        </div>
-    </div>
-
+    <div id="geInfo"><div class="geBlock"><h2 id="geStatus">Loading...</h2></div></div>
     <script src="js/main.js"></script>
-
     <script>
     (function() {
         var LS_KEY = 'drawio_last_file';
-        var fileSelect = document.getElementById('file-select');
-        var loadBtn = document.getElementById('load-btn');
-        var statusEl = document.getElementById('diagram-status');
-        var currentFile = null;
+        var sel = document.getElementById('file-select');
+        var status = document.getElementById('status');
+        var editorUi = null;
 
-        // Load diagram list
-        function refreshFileList(selectFile) {
-            fetch('/api/diagrams')
-                .then(function(r) { return r.json(); })
-                .then(function(resp) {
-                    if (resp.success) {
-                        fileSelect.innerHTML = '<option value="">— Select diagram —</option>';
-                        resp.data.forEach(function(f) {
-                            var opt = document.createElement('option');
-                            opt.value = f.name;
-                            opt.textContent = f.name;
-                            fileSelect.appendChild(opt);
-                        });
-                        if (selectFile) {
-                            fileSelect.value = selectFile;
-                        }
-                    }
+        function refreshList() {
+            fetch('/api/diagrams').then(function(r){return r.json()}).then(function(resp){
+                if (!resp.success) return;
+                sel.innerHTML = '<option value="">Select</option>';
+                resp.data.forEach(function(f) {
+                    var o = document.createElement('option');
+                    o.value = f.name; o.textContent = f.name;
+                    sel.appendChild(o);
                 });
+            });
         }
 
-        // Load diagram XML into the editor
-        function loadDiagram(filename) {
-            if (!filename || !window.editorUi) return;
-            statusEl.textContent = '● Loading ' + filename + '...';
-            statusEl.style.color = '#ff8';
+        function setMsg(text, color) {
+            status.textContent = text;
+            status.style.color = color || '#8f8';
+        }
 
-            fetch('/api/diagrams/' + encodeURIComponent(filename))
-                .then(function(r) { return r.json(); })
-                .then(function(resp) {
-                    if (resp.success && resp.data && resp.data.xml) {
-                        var ui = window.editorUi;
-                        var xml = resp.data.xml;
-                        var doc = mxUtils.parseXml(xml);
-                        var root = doc.documentElement;
-
-                        // Set the model data
-                        ui.editor.setGraphXml(root);
-
-                        // Update file metadata
-                        if (ui.currentFile) {
-                            ui.currentFile.setData(xml);
-                            ui.currentFile.title = filename;
-                        }
-
-                        // Store for SSE tracking
-                        currentFile = filename;
-                        localStorage.setItem(LS_KEY, filename);
-                        fileSelect.value = filename;
-                        statusEl.textContent = '✓ ' + filename;
-                        statusEl.style.color = '#8f8';
-
-                        // Update URL without reload
-                        var url = new URL(window.location);
-                        url.searchParams.set('file', filename);
-                        window.history.replaceState({}, '', url);
-                    }
+        function loadFile(name) {
+            if (!name || !editorUi) { setMsg('Editor not ready', '#f88'); return; }
+            setMsg('Loading ' + name + '...', '#ff8');
+            fetch('/api/diagrams/' + encodeURIComponent(name))
+                .then(function(r){return r.json()})
+                .then(function(resp){
+                    if (!resp.success) throw new Error('API error');
+                    var doc = mxUtils.parseXml(resp.data.xml);
+                    editorUi.editor.setGraphXml(doc.documentElement);
+                    editorUi.currentFile = { setData: function(d){this.data=d;}, data: resp.data.xml, title: name };
+                    localStorage.setItem(LS_KEY, name);
+                    sel.value = name;
+                    setMsg('✓ ' + name);
                 })
-                .catch(function(e) {
-                    statusEl.textContent = '✗ Load failed';
-                    statusEl.style.color = '#f88';
-                    console.error('Load error:', e);
-                });
+                .catch(function(e){ setMsg(e.message, '#f88'); });
         }
 
-        // Load button click
-        loadBtn.addEventListener('click', function() {
-            loadDiagram(fileSelect.value);
-        });
-
-        // SSE auto-refresh
-        var evtSource = new EventSource('/api/watch');
-        evtSource.onmessage = function(e) {
+        // Watch for diagram changes -> auto-reload file
+        var sse = new EventSource('/api/watch');
+        sse.onmessage = function(e) {
             try {
-                var data = JSON.parse(e.data);
-                if (data.event === 'reload' && data.file && currentFile && data.file === currentFile) {
-                    statusEl.textContent = '↻ Reloading ' + data.file + '...';
-                    statusEl.style.color = '#ff8';
-                    loadDiagram(currentFile);
+                var d = JSON.parse(e.data);
+                if (d.event === 'reload' && d.file === localStorage.getItem(LS_KEY)) {
+                    setMsg('↻ Reloading...', '#ff8');
+                    loadFile(d.file);
                 }
             } catch(ex) {}
         };
-        evtSource.onerror = function() {
-            statusEl.textContent = '⚠ SSE disconnected';
-            statusEl.style.color = '#f88';
-        };
 
-        // Poll for editor readiness, then load from URL param or localStorage
-        var interval = setInterval(function() {
-            if (window.editorUi && window.editorUi.editor && window.editorUi.editor.graph) {
-                clearInterval(interval);
-                refreshFileList();
+        document.getElementById('load-btn').onclick = function() { loadFile(sel.value); };
 
-                // Check URL param first, then localStorage
-                var urlParams = new URLSearchParams(window.location.search);
-                var fileParam = urlParams.get('file') || localStorage.getItem(LS_KEY);
-                if (fileParam) {
-                    // Small delay for file list to populate
-                    setTimeout(function() {
-                        loadDiagram(fileParam);
-                    }, 300);
+        // Wait for editor by polling Draw.loadPlugin
+        refreshList();
+        var fileToLoad = new URLSearchParams(window.location.search).get('file') || localStorage.getItem(LS_KEY);
+
+        var waitCount = 0;
+        var waitTimer = setInterval(function() {
+            waitCount++;
+            // The App constructor sets Draw.loadPlugin to a bound function
+            // that receives the editor UI as its 'this' context
+            if (window.Draw && window.Draw.loadPlugin && window.editorUi === undefined) {
+                try {
+                    Draw.loadPlugin(function(ui) {
+                        window.editorUi = ui;
+                        editorUi = ui;
+                    });
+                } catch(e) {}
+            }
+            if (editorUi) {
+                clearInterval(waitTimer);
+                setMsg('Editor loaded');
+                if (fileToLoad) {
+                    setTimeout(function() { sel.value = fileToLoad; loadFile(fileToLoad); }, 500);
                 }
+            } else if (waitCount > 100) {
+                clearInterval(waitTimer);
+                setMsg('Timed out. Click Load manually.', '#f88');
             }
         }, 500);
-
-        // Refresh file list periodically
-        setInterval(refreshFileList, 10000);
     })();
     </script>
 </body>
