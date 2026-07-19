@@ -1,0 +1,101 @@
+const fs = require('fs');
+const path = require('path');
+const chokidar = require('chokidar');
+const { parseDrawioFile, createEmptyDiagram } = require('./xml-builder');
+
+const DIAGRAMS_DIR = path.join(__dirname, '..', '..', 'diagrams');
+const sseClients = {};
+
+function ensureDiagramsDir() {
+    if (!fs.existsSync(DIAGRAMS_DIR)) {
+        fs.mkdirSync(DIAGRAMS_DIR, { recursive: true });
+    }
+}
+
+function listDiagrams() {
+    ensureDiagramsDir();
+    const files = fs.readdirSync(DIAGRAMS_DIR);
+    return files
+        .filter(f => f.endsWith('.drawio'))
+        .map(f => ({
+            name: f,
+            size: fs.statSync(path.join(DIAGRAMS_DIR, f)).size,
+            modified: fs.statSync(path.join(DIAGRAMS_DIR, f)).mtime
+        }));
+}
+
+function readDiagram(name) {
+    const filePath = path.join(DIAGRAMS_DIR, name);
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Diagram "${name}" not found`);
+    }
+    return parseDrawioFile(fs.readFileSync(filePath, 'utf8'));
+}
+
+function writeDiagram(name, xmlContent) {
+    ensureDiagramsDir();
+    const filePath = path.join(DIAGRAMS_DIR, name);
+    fs.writeFileSync(filePath, xmlContent, 'utf8');
+}
+
+function deleteDiagram(name) {
+    const filePath = path.join(DIAGRAMS_DIR, name);
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+}
+
+function createDiagram(name) {
+    ensureDiagramsDir();
+    const filePath = path.join(DIAGRAMS_DIR, name);
+    if (fs.existsSync(filePath)) {
+        throw new Error(`Diagram "${name}" already exists`);
+    }
+    const xml = createEmptyDiagram();
+    fs.writeFileSync(filePath, xml, 'utf8');
+    return xml;
+}
+
+function watchDiagram(name, res) {
+    if (!sseClients[name]) sseClients[name] = [];
+    sseClients[name].push(res);
+    res.on('close', () => removeSseClient(name, res));
+}
+
+function removeSseClient(name, res) {
+    if (sseClients[name]) {
+        sseClients[name] = sseClients[name].filter(c => c !== res);
+        if (sseClients[name].length === 0) delete sseClients[name];
+    }
+}
+
+function notifyChange(name) {
+    if (sseClients[name]) {
+        const data = JSON.stringify({ event: 'reload', file: name });
+        for (const res of sseClients[name]) {
+            res.write(`data: ${data}\n\n`);
+        }
+    }
+}
+
+// Start file watcher
+const watcher = chokidar.watch(DIAGRAMS_DIR, {
+    ignored: /(^|[\/\\])\.\./,
+    ignoreInitial: true
+});
+
+watcher.on('change', (filePath) => {
+    const name = path.basename(filePath);
+    notifyChange(name);
+});
+
+watcher.on('add', (filePath) => {
+    const name = path.basename(filePath);
+    notifyChange(name);
+});
+
+module.exports = {
+    listDiagrams, readDiagram, writeDiagram,
+    deleteDiagram, createDiagram,
+    watchDiagram, removeSseClient, notifyChange
+};
