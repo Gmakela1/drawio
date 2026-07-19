@@ -68,4 +68,7 @@ router.get('/:name/list', (req, res) => {
     }
 });
 
+// Mount shape sub-routes
+router.use('/:name/shapes', require('./shapes'));
+
 module.exports = router;
