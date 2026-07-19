@@ -68,6 +68,9 @@ router.get('/:name/list', (req, res) => {
     }
 });
 
+// Mount pinout sub-routes
+router.use('/:name/pinout', require('./pinout'));
+
 // Mount group sub-routes
 router.use('/:name/groups', require('./groups'));
 
