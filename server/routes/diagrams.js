@@ -68,6 +68,8 @@ router.get('/:name/list', (req, res) => {
     }
 });
 
+// Mount connection sub-routes
+router.use('/:name/connections', require('./connections'));
 // Mount shape sub-routes
 router.use('/:name/shapes', require('./shapes'));
 
