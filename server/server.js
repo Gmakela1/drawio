@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
@@ -8,25 +9,25 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Serve drawio static files
 const webappPath = path.join(__dirname, '..', 'src', 'main', 'webapp');
-app.use(express.static(webappPath));
 
-// Custom editor page with auto-load + SSE
+// Serve static files EXCEPT index.html (handled below)
+app.use(express.static(webappPath, { index: false }));
+
+// Custom editor page
 app.get('/editor', (req, res) => {
     res.sendFile(path.join(__dirname, 'editor.html'));
 });
 
 // API routes
-const apiRoutes = require('./routes/index');
-app.use('/api', apiRoutes);
+app.use('/api', require('./routes/index'));
 
-// Inject SSE auto-refresh script into drawio HTML pages
-app.use((req, res, next) => {
-    const originalSend = res.send;
-    res.send = function(body) {
-        if (typeof body === 'string' && res.get('Content-Type')?.includes('text/html')) {
-            const sseScript = `
+// Serve index.html with SSE auto-refresh injected
+app.get('/', (req, res) => {
+    const indexPath = path.join(webappPath, 'index.html');
+    fs.readFile(indexPath, 'utf8', (err, html) => {
+        if (err) return res.status(500).send('Error loading editor');
+        const sseScript = `
 <script>
 (function() {
     var evtSource = new EventSource('/api/watch');
@@ -34,18 +35,16 @@ app.use((req, res, next) => {
         try {
             var data = JSON.parse(e.data);
             if (data.event === 'reload') {
-                console.log('Diagram changed: ' + data.file + ' - reloading...');
+                console.log('File changed: ' + data.file + ' - reloading');
                 window.location.reload();
             }
         } catch(ex) {}
     };
 })();
 </script>`;
-            body = body.replace('</body>', sseScript + '</body>');
-        }
-        return originalSend.call(this, body);
-    };
-    next();
+        html = html.replace('</body>', sseScript + '</body>');
+        res.send(html);
+    });
 });
 
 app.listen(PORT, () => {
