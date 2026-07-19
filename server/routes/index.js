@@ -9,6 +9,9 @@ router.get('/health', (req, res) => {
 // Diagram CRUD
 router.use('/diagrams', require('./diagrams'));
 
+// Stencil libraries
+router.use('/stencils', require('./stencils'));
+
 // SSE endpoint for auto-refresh
 router.get('/watch/:name', (req, res) => {
     res.writeHead(200, {
