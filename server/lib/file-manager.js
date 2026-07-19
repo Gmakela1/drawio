@@ -4,7 +4,8 @@ const chokidar = require('chokidar');
 const { parseDrawioFile, createEmptyDiagram } = require('./xml-builder');
 
 const DIAGRAMS_DIR = path.join(__dirname, '..', '..', 'diagrams');
-const sseClients = {};
+const sseClients = {};       // per-file SSE clients
+const allSseClients = [];    // global SSE clients (watch all files)
 
 function ensureDiagramsDir() {
     if (!fs.existsSync(DIAGRAMS_DIR)) {
@@ -62,6 +63,17 @@ function watchDiagram(name, res) {
     res.on('close', () => removeSseClient(name, res));
 }
 
+/**
+ * Subscribe to all file changes (global SSE channel).
+ */
+function watchAllDiagrams(res) {
+    allSseClients.push(res);
+    res.on('close', () => {
+        const idx = allSseClients.indexOf(res);
+        if (idx >= 0) allSseClients.splice(idx, 1);
+    });
+}
+
 function removeSseClient(name, res) {
     if (sseClients[name]) {
         sseClients[name] = sseClients[name].filter(c => c !== res);
@@ -70,17 +82,22 @@ function removeSseClient(name, res) {
 }
 
 function notifyChange(name) {
+    const data = JSON.stringify({ event: 'reload', file: name });
+    // Notify per-file subscribers
     if (sseClients[name]) {
-        const data = JSON.stringify({ event: 'reload', file: name });
         for (const res of sseClients[name]) {
             res.write(`data: ${data}\n\n`);
         }
     }
+    // Notify global subscribers
+    for (const res of allSseClients) {
+        res.write(`data: ${data}\n\n`);
+    }
 }
 
-// Start file watcher
+// Start file watcher (ignore .gitkeep and hidden files)
 const watcher = chokidar.watch(DIAGRAMS_DIR, {
-    ignored: /(^|[\/\\])\.\./,
+    ignored: /(^|[\/\\])\../,
     ignoreInitial: true
 });
 
@@ -97,5 +114,5 @@ watcher.on('add', (filePath) => {
 module.exports = {
     listDiagrams, readDiagram, writeDiagram,
     deleteDiagram, createDiagram,
-    watchDiagram, removeSseClient, notifyChange
+    watchDiagram, watchAllDiagrams, removeSseClient, notifyChange
 };
