@@ -14,35 +14,45 @@ const webappPath = path.join(__dirname, '..', 'src', 'main', 'webapp');
 // Serve static files EXCEPT index.html (handled below)
 app.use(express.static(webappPath, { index: false }));
 
-// Custom editor page
-app.get('/editor', (req, res) => {
-    res.sendFile(path.join(__dirname, 'editor.html'));
-});
-
 // API routes
 app.use('/api', require('./routes/index'));
 
-// Serve index.html with SSE auto-refresh injected
+// Serve index.html with polling auto-refresh injected
 app.get('/', (req, res) => {
     const indexPath = path.join(webappPath, 'index.html');
     fs.readFile(indexPath, 'utf8', (err, html) => {
         if (err) return res.status(500).send('Error loading editor');
-        const sseScript = `
+        const pollScript = `
 <script>
 (function() {
-    var evtSource = new EventSource('/api/watch');
-    evtSource.onmessage = function(e) {
-        try {
-            var data = JSON.parse(e.data);
-            if (data.event === 'reload') {
-                console.log('File changed: ' + data.file + ' - reloading');
-                window.location.reload();
-            }
-        } catch(ex) {}
-    };
+    var LS_KEY = 'drawio_timestamps';
+    var lastTimestamps = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+
+    // Poll every 2 seconds for file changes
+    setInterval(function() {
+        fetch('/api/diagrams')
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (!resp.success) return;
+                var changed = false;
+                resp.data.forEach(function(f) {
+                    var ts = new Date(f.modified).getTime();
+                    if (lastTimestamps[f.name] && lastTimestamps[f.name] !== ts) {
+                        console.log('File changed: ' + f.name);
+                        changed = true;
+                    }
+                    lastTimestamps[f.name] = ts;
+                });
+                localStorage.setItem(LS_KEY, JSON.stringify(lastTimestamps));
+                if (changed) {
+                    window.location.reload();
+                }
+            })
+            .catch(function() {});
+    }, 2000);
 })();
 </script>`;
-        html = html.replace('</body>', sseScript + '</body>');
+        html = html.replace('</body>', pollScript + '</body>');
         res.send(html);
     });
 });
