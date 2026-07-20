@@ -32,7 +32,7 @@
     <script src="js/main.js"></script>
     <script>
     (function() {
-        var LS_KEY = 'drawio_last_file';
+        var LS_FILE = 'drawio_last_file';
         var sel = document.getElementById('file-select');
         var status = document.getElementById('status');
         var editorUi = null;
@@ -49,70 +49,66 @@
             });
         }
 
-        function setMsg(text, color) {
-            status.textContent = text;
-            status.style.color = color || '#8f8';
-        }
-
         function loadFile(name) {
-            if (!name || !editorUi) { setMsg('Editor not ready', '#f88'); return; }
-            setMsg('Loading ' + name + '...', '#ff8');
+            if (!name || !editorUi) { status.textContent = 'Editor not ready'; return; }
+            status.textContent = 'Loading ' + name + '...';
             fetch('/api/diagrams/' + encodeURIComponent(name))
                 .then(function(r){return r.json()})
                 .then(function(resp){
                     if (!resp.success) throw new Error('API error');
                     var doc = mxUtils.parseXml(resp.data.xml);
                     editorUi.editor.setGraphXml(doc.documentElement);
-                    editorUi.currentFile = { setData: function(d){this.data=d;}, data: resp.data.xml, title: name };
-                    localStorage.setItem(LS_KEY, name);
+                    localStorage.setItem(LS_FILE, name);
                     sel.value = name;
-                    setMsg('✓ ' + name);
+                    status.textContent = '✓ ' + name;
                 })
-                .catch(function(e){ setMsg(e.message, '#f88'); });
+                .catch(function(e){ status.textContent = 'Error: ' + e.message; });
         }
-
-        // Watch for diagram changes -> auto-reload file
-        var sse = new EventSource('/api/watch');
-        sse.onmessage = function(e) {
-            try {
-                var d = JSON.parse(e.data);
-                if (d.event === 'reload' && d.file === localStorage.getItem(LS_KEY)) {
-                    setMsg('↻ Reloading...', '#ff8');
-                    loadFile(d.file);
-                }
-            } catch(ex) {}
-        };
 
         document.getElementById('load-btn').onclick = function() { loadFile(sel.value); };
 
-        // Wait for editor by polling Draw.loadPlugin
-        refreshList();
-        var fileToLoad = new URLSearchParams(window.location.search).get('file') || localStorage.getItem(LS_KEY);
+        // Polling auto-refresh
+        var lastTs = JSON.parse(localStorage.getItem('drawio_timestamps') || '{}');
+        setInterval(function() {
+            fetch('/api/diagrams').then(function(r){return r.json()}).then(function(resp){
+                if (!resp.success) return;
+                var changed = false;
+                resp.data.forEach(function(f) {
+                    var ts = new Date(f.modified).getTime();
+                    if (lastTs[f.name] && lastTs[f.name] !== ts) changed = true;
+                    lastTs[f.name] = ts;
+                });
+                localStorage.setItem('drawio_timestamps', JSON.stringify(lastTs));
+                if (changed) {
+                    var cur = localStorage.getItem(LS_FILE);
+                    if (cur) { loadFile(cur); } else { window.location.reload(); }
+                }
+            }).catch(function(){});
+        }, 2000);
 
-        var waitCount = 0;
+        // Get editor UI via Draw.loadPlugin callback
+        refreshList();
+        var fileToLoad = new URLSearchParams(window.location.search).get('file') || localStorage.getItem(LS_FILE);
+
         var waitTimer = setInterval(function() {
-            waitCount++;
-            // The App constructor sets Draw.loadPlugin to a bound function
-            // that receives the editor UI as its 'this' context
-            if (window.Draw && window.Draw.loadPlugin && window.editorUi === undefined) {
-                try {
-                    Draw.loadPlugin(function(ui) {
-                        window.editorUi = ui;
-                        editorUi = ui;
-                    });
-                } catch(e) {}
-            }
-            if (editorUi) {
+            if (window.editorUi) {
+                editorUi = window.editorUi;
                 clearInterval(waitTimer);
-                setMsg('Editor loaded');
+                status.textContent = 'Editor loaded';
                 if (fileToLoad) {
                     setTimeout(function() { sel.value = fileToLoad; loadFile(fileToLoad); }, 500);
                 }
-            } else if (waitCount > 100) {
-                clearInterval(waitTimer);
-                setMsg('Timed out. Click Load manually.', '#f88');
+            } else if (window.Draw && window.Draw.loadPlugin && typeof window.Draw.loadPlugin === 'function') {
+                try {
+                    Draw.loadPlugin(function(ui) { window.editorUi = ui; });
+                } catch(e) {}
             }
         }, 500);
+
+        // Timeout after 60s
+        setTimeout(function() {
+            if (!editorUi) status.textContent = 'Timed out. Click Load manually.';
+        }, 60000);
     })();
     </script>
 </body>
