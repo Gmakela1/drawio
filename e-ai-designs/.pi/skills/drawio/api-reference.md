@@ -42,20 +42,74 @@ Key style properties for drawio shapes:
 
 ## Common Electrical Components
 
-For drawio built-in electrical shapes, use the `shape` style property:
-- `mxgraph.electrical.basic_resistor` - Resistor
-- `mxgraph.electrical.basic_capacitor` - Capacitor
-- `mxgraph.electrical.basic_inductor` - Inductor
-- `mxgraph.electrical.basic_diode` - Diode
-- `mxgraph.electrical.basic_battery` - Battery
-- `mxgraph.electrical.basic_ground` - Ground symbol
-- `mxgraph.electrical.basic_fuse` - Fuse
-- `mxgraph.electrical.basic_switch` - Switch
-- `mxgraph.electrical.basic_transistor_npn` - NPN Transistor
-- `mxgraph.electrical.basic_transistor_pnp` - PNP Transistor
-- `mxgraph.electrical.basic_motor` - Motor
-- `mxgraph.electrical.basic_relay` - Relay coil
-- `mxgraph.electrical.basic_transformer` - Transformer
+### Built-in drawio Electrical Shapes (via `shape` style property)
+
+These are always available and should be used for basic passive, switching, and power components:
+
+**Passive Components:**
+- `mxgraph.electrical.resistors.resistor` — Resistor (IEC)
+- `mxgraph.electrical.capacitors.capacitor` — Capacitor
+- `mxgraph.electrical.inductors.inductor` — Inductor
+- `mxgraph.electrical.inductors.transformer` — Transformer
+- `mxgraph.electrical.miscellaneous.crystal` — Crystal oscillator
+
+**Semiconductors:**
+- `mxgraph.electrical.diodes.diode` — Standard diode
+- `mxgraph.electrical.diodes.zener_diode` — Zener diode
+- `mxgraph.electrical.diodes.bridge_rectifier` — Bridge rectifier
+- `mxgraph.electrical.transistors.npn_transistor_1` — NPN transistor
+- `mxgraph.electrical.transistors.pnp_transistor_1` — PNP transistor
+- `mxgraph.electrical.transistors.thyristor` — Thyristor/SCR
+- `mxgraph.electrical.transistors.triac` — TRIAC
+- `mxgraph.electrical.abstract.op_amp` — Operational amplifier
+
+**Switching & Protection:**
+- `mxgraph.electrical.switches_and_relays.switch_1` — SPST switch
+- `mxgraph.electrical.switches_and_relays.relay` — Relay
+- `mxgraph.electrical.miscellaneous.fuse` — Fuse
+
+**Power & Sources:**
+- `mxgraph.electrical.signal_sources.dc_source_1` — DC voltage source
+- `mxgraph.electrical.signal_sources.ac_source` — AC source
+- `mxgraph.electrical.signal_sources.ground` — Ground
+- `mxgraph.electrical.miscellaneous.dc_dc_converter` — DC-DC converter
+- `mxgraph.electrical.miscellaneous.voltage_regulator` — Voltage regulator
+
+**Output:**
+- `mxgraph.electrical.miscellaneous.motor` — Motor
+- `mxgraph.electrical.miscellaneous.speaker` — Speaker
+- `mxgraph.electrical.miscellaneous.buzzer` — Buzzer
+- `mxgraph.electrical.miscellaneous.lamp` — Lamp
+- `mxgraph.electrical.optoelectronics.led` — LED
+
+**Logic:**
+- `mxgraph.electrical.logic_gates.and` — AND gate
+- `mxgraph.electrical.logic_gates.or` — OR gate
+- `mxgraph.electrical.logic_gates.not` — NOT gate
+- `mxgraph.electrical.logic_gates.nand` — NAND gate
+- `mxgraph.electrical.logic_gates.nor` — NOR gate
+- `mxgraph.electrical.logic_gates.xor` — XOR gate
+- `mxgraph.electrical.logic_gates.buffer` — Buffer
+- `mxgraph.electrical.logic_gates.d_type_flip-flop` — D flip-flop
+- `mxgraph.electrical.logic_gates.multiplexer` — Multiplexer
+
+### EAI-IC Stencil Library (for IC/Microcontroller components)
+
+Loaded automatically from `http://localhost:3000/stencils/eai-ic.xml`. These are pre-built composite components with labeled pins. Use them via the stencil panel in the editor — not via the REST API.
+
+**Available ICs:**
+- Arduino Uno, Arduino Nano — with individual pin labels
+- Raspberry Pi, Raspberry Pi A+/B+, Raspberry Pi B+
+- ESP32, QT Py, NodeMCU
+- Integrated Circuit (1, 2, 3, 4×25) — Generic ICs
+- Microcontroller — Generic MCU
+- BCD Decoder, VS1053
+
+To add an IC to a diagram, drag it from the stencil panel in the editor, or place it via the shapes API with `shape=stencil;component=NAME` if the stencil is loaded.
+
+### Creating Custom ICs
+
+Use the **drawio-ic-builder** skill for creating new IC components (motor controllers, custom MCUs, etc.) with proper pinout, sizing, and styling.
 
 ## Workflow: Create a Simple Power Distribution Diagram
 
