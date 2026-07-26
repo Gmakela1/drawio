@@ -19,7 +19,7 @@ router.post('/', (req, res) => {
         model.cells[id] = {
             id, parent: '1', edge: true,
             value: label || '',
-            style: styleStr || 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;',
+            style: styleStr || 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;',
             source: from, target: to,
             geometry: { relative: true }
         };

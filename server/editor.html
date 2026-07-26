@@ -242,6 +242,15 @@
                 }
                 // Auto-load stencil libraries
                 setTimeout(function() {
+                    // Set default connection style to line without arrows
+                    var graph = editorUi.editor.graph;
+                    var noArrowStyle = 'edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;';
+                    graph.stylesheet.getDefaultEdgeStyle = function() { return noArrowStyle; };
+                    // Also fix existing default
+                    if (mxConstants) {
+                        mxConstants.DEFAULT_EDGESTYLE = noArrowStyle;
+                    }
+                    
                     fetch('/api/stencils').then(function(r){return r.json()}).then(function(resp){
                         if (!resp.success) return;
                         resp.data.forEach(function(lib) {
