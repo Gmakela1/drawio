@@ -16,6 +16,9 @@
         }
         #diagram-bar select { background:#444; color:#fff; border:1px solid #666; padding:2px 8px; border-radius:3px; }
         #diagram-bar button { background:#d89000; color:#fff; border:none; padding:3px 10px; border-radius:3px; cursor:pointer; }
+        #diagram-bar button.save { background:#2d8a2d; }
+        #diagram-bar button.save-as { background:#555; }
+        #diagram-bar button.new-btn { background:#444; }
         #diagram-bar .msg { font-size:11px; margin-left:auto; }
         body.geEditor { padding-top: 30px; }
         #geInfo { display:none; }
@@ -26,6 +29,9 @@
         <span>📐</span>
         <select id="file-select"><option value="">Loading...</option></select>
         <button id="load-btn">Load</button>
+        <button id="save-btn" class="save" style="display:none">💾 Save</button>
+        <button id="save-as-btn" class="save-as" style="display:none">Save As</button>
+        <button id="new-btn" class="new-btn">➕ New</button>
         <span id="status" class="msg">Ready</span>
     </div>
     <div id="geInfo"><div class="geBlock"><h2 id="geStatus">Loading...</h2></div></div>
@@ -67,7 +73,143 @@
 
         document.getElementById('load-btn').onclick = function() { loadFile(sel.value); };
 
-        // Polling auto-refresh
+        // --- Save: write current editor state back to the loaded file ---
+        function saveFile(name) {
+            if (!name || !editorUi) { status.textContent = 'Nothing to save'; return; }
+            status.textContent = 'Saving ' + name + '...';
+            var xml = mxUtils.getXml(editorUi.editor.getGraphXml());
+            fetch('/api/diagrams/' + encodeURIComponent(name), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ xml: xml })
+            })
+            .then(function(r){return r.json()})
+            .then(function(resp){
+                if (!resp.success) throw new Error(resp.error || 'Save failed');
+                status.textContent = '✓ Saved ' + name;
+            })
+            .catch(function(e){ status.textContent = 'Save error: ' + e.message; });
+        }
+
+        document.getElementById('save-btn').onclick = function() {
+            var name = localStorage.getItem(LS_FILE);
+            if (name) saveFile(name);
+        };
+
+        // --- Save As: prompt for new filename ---
+        document.getElementById('save-as-btn').onclick = function() {
+            if (!editorUi) { status.textContent = 'Editor not ready'; return; }
+            var currentName = localStorage.getItem(LS_FILE) || 'diagram';
+            var suggested = currentName.replace('.drawio', '') + '-v2.drawio';
+            var newName = prompt('Save as filename:', suggested);
+            if (!newName) return;
+            if (!newName.endsWith('.drawio')) newName += '.drawio';
+
+            // Check if exists, then save
+            status.textContent = 'Saving as ' + newName + '...';
+            var xml = mxUtils.getXml(editorUi.editor.getGraphXml());
+            fetch('/api/diagrams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            })
+            .then(function(r){return r.json()})
+            .then(function(resp){
+                if (!resp.success) {
+                    // File might already exist — overwrite it
+                    return fetch('/api/diagrams/' + encodeURIComponent(newName), {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ xml: xml })
+                    }).then(function(r){return r.json()});
+                }
+                // New file created, now write the XML
+                return fetch('/api/diagrams/' + encodeURIComponent(newName), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ xml: xml })
+                }).then(function(r){return r.json()});
+            })
+            .then(function(resp){
+                if (!resp.success) throw new Error(resp.error || 'Save As failed');
+                localStorage.setItem(LS_FILE, newName);
+                refreshList();
+                setTimeout(function() { sel.value = newName; }, 100);
+                status.textContent = '✓ Saved as ' + newName;
+            })
+            .catch(function(e){ status.textContent = 'Save As error: ' + e.message; });
+        };
+
+        // --- New: create a blank diagram ---
+        document.getElementById('new-btn').onclick = function() {
+            if (!editorUi) { status.textContent = 'Editor not ready'; return; }
+            var name = prompt('New diagram filename:', 'new-diagram.drawio');
+            if (!name) return;
+            if (!name.endsWith('.drawio')) name += '.drawio';
+            status.textContent = 'Creating ' + name + '...';
+            fetch('/api/diagrams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+            .then(function(r){return r.json()})
+            .then(function(resp){
+                if (!resp.success) throw new Error(resp.error || 'Create failed');
+                // Load the blank diagram
+                fetch('/api/diagrams/' + encodeURIComponent(name))
+                    .then(function(r){return r.json()})
+                    .then(function(resp2){
+                        if (!resp2.success) throw new Error('Load failed');
+                        var doc = mxUtils.parseXml(resp2.data.xml);
+                        editorUi.editor.setGraphXml(doc.documentElement);
+                        localStorage.setItem(LS_FILE, name);
+                        refreshList();
+                        setTimeout(function() { sel.value = name; }, 100);
+                        status.textContent = '✓ Created ' + name;
+                    });
+            })
+            .catch(function(e){ status.textContent = 'Error: ' + e.message; });
+        };
+
+        // Show save buttons when a file is loaded
+        function showSaveButtons() {
+            document.getElementById('save-btn').style.display = '';
+            document.getElementById('save-as-btn').style.display = '';
+        }
+
+        // Patch loadFile to show save buttons
+        var origLoadFile = loadFile;
+        loadFile = function(name) {
+            showSaveButtons();
+            origLoadFile(name);
+        };
+
+        // --- SSE-based auto-refresh: in-place updates, no full page reload ---
+        var sseUrl = '/api/watch';
+        var evtSource = new EventSource(sseUrl);
+        evtSource.onmessage = function(e) {
+            try {
+                var data = JSON.parse(e.data);
+                if (data.event === 'reload' || data.event === 'connected') {
+                    if (data.event === 'connected') {
+                        console.log('SSE connected to ' + sseUrl);
+                        return;
+                    }
+                    // Reload the currently open file in-place
+                    var cur = localStorage.getItem(LS_FILE);
+                    if (cur && editorUi) {
+                        console.log('SSE: reloading ' + cur);
+                        loadFile(cur);
+                    }
+                }
+            } catch (err) {
+                console.log('SSE error:', err);
+            }
+        };
+        evtSource.onerror = function() {
+            console.log('SSE disconnected, will auto-reconnect');
+        };
+        // Also keep a quick polling fallback (every 10s) in case SSE drops
         var lastTs = JSON.parse(localStorage.getItem('drawio_timestamps') || '{}');
         setInterval(function() {
             fetch('/api/diagrams').then(function(r){return r.json()}).then(function(resp){
@@ -81,10 +223,10 @@
                 localStorage.setItem('drawio_timestamps', JSON.stringify(lastTs));
                 if (changed) {
                     var cur = localStorage.getItem(LS_FILE);
-                    if (cur) { loadFile(cur); } else { window.location.reload(); }
+                    if (cur && editorUi) { loadFile(cur); }
                 }
             }).catch(function(){});
-        }, 2000);
+        }, 10000);
 
         // Get editor UI via Draw.loadPlugin callback
         refreshList();
@@ -109,6 +251,15 @@
         setTimeout(function() {
             if (!editorUi) status.textContent = 'Timed out. Click Load manually.';
         }, 60000);
+
+        // --- Ctrl+S keyboard shortcut to save ---
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                var name = localStorage.getItem(LS_FILE);
+                if (name && editorUi) saveFile(name);
+            }
+        });
     })();
     </script>
 </body>

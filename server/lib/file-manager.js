@@ -37,6 +37,8 @@ function writeDiagram(name, xmlContent) {
     ensureDiagramsDir();
     const filePath = path.join(DIAGRAMS_DIR, name);
     fs.writeFileSync(filePath, xmlContent, 'utf8');
+    // Immediately notify SSE clients — don't wait for chokidar
+    notifyChange(name);
 }
 
 function deleteDiagram(name) {
