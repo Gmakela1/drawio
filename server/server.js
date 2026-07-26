@@ -9,10 +9,15 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+const config = require('./config');
+
 const webappPath = path.join(__dirname, '..', 'src', 'main', 'webapp');
 
 // Serve static files EXCEPT index.html
 app.use(express.static(webappPath, { index: false }));
+
+// Serve stencil libraries directly to the drawio editor
+app.use('/stencils', express.static(config.stencilsDir));
 
 // API routes
 app.use('/api', require('./routes/index'));

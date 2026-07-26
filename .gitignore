@@ -20,6 +20,8 @@ diagrams/*.tmp
 # Environment
 .env
 
-# User project files (diagrams and stencils are per-user)
+# User project files (only diagrams are per-user, stencils are committed)
 e-ai-designs/diagrams/
-e-ai-designs/stencils/
+
+# Cloned source repos
+server/lib/circuitdiagram-components/
