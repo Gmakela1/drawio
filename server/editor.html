@@ -240,6 +240,15 @@
                 if (fileToLoad) {
                     setTimeout(function() { sel.value = fileToLoad; loadFile(fileToLoad); }, 500);
                 }
+                // Auto-load stencil libraries
+                setTimeout(function() {
+                    fetch('/api/stencils').then(function(r){return r.json()}).then(function(resp){
+                        if (!resp.success) return;
+                        resp.data.forEach(function(lib) {
+                            editorUi.loadLibrary('/stencils/' + encodeURIComponent(lib));
+                        });
+                    });
+                }, 1000);
             } else if (window.Draw && window.Draw.loadPlugin && typeof window.Draw.loadPlugin === 'function') {
                 try {
                     Draw.loadPlugin(function(ui) { window.editorUi = ui; });
