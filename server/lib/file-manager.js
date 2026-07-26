@@ -2,8 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
 const { parseDrawioFile, createEmptyDiagram } = require('./xml-builder');
+const config = require('../config');
 
-const DIAGRAMS_DIR = path.join(__dirname, '..', '..', 'diagrams');
+const DIAGRAMS_DIR = config.diagramsDir;
 const sseClients = {};       // per-file SSE clients
 const allSseClients = [];    // global SSE clients (watch all files)
 

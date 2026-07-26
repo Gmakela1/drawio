@@ -14,6 +14,7 @@ This guide covers everything you need to set up, run, and use this drawio AI-pow
 ### 1. Clone the repository
 
 ```bash
+cd ~/vscode
 git clone https://github.com/Gmakela1/drawio.git
 cd drawio
 git checkout dev
@@ -27,10 +28,27 @@ npm install
 cd ..
 ```
 
-### 3. Start the server
+### 3. Set up the projects directory (e-ai-designs)
+
+This is where your diagrams and AI skills live — separate from the drawio source code.
 
 ```bash
-cd server
+cd ~
+mkdir -p e-ai-designs/diagrams
+mkdir -p e-ai-designs/stencils
+mkdir -p e-ai-designs/.pi/skills
+
+# Copy the AI skills
+cp -r ~/vscode/drawio/.pi/skills/* ~/e-ai-designs/.pi/skills/
+
+# Create settings for pi code
+echo '{"skills":[".pi/skills"]}' > ~/e-ai-designs/.pi/settings.json
+```
+
+### 4. Start the server
+
+```bash
+cd ~/vscode/drawio/server
 node server.js
 ```
 
@@ -41,7 +59,7 @@ API available at http://localhost:3000/api
 Editor with auto-load: http://localhost:3000/editor?file=NAME.drawio
 ```
 
-### 4. Open the editor
+### 5. Open the editor
 
 Navigate to **http://localhost:3000/editor** in your browser.
 
@@ -52,24 +70,16 @@ You'll see a custom toolbar at the top with:
 - **Save As** — Save a copy to a new filename
 - **➕ New** — Create a blank new diagram
 
-### 5. (Optional) Enable AI features
+### 6. (Optional) Enable AI features
 
-If you have pi code installed, navigate to the project folder and start:
+If you have pi code installed, navigate to the **e-ai-designs** folder (not the drawio folder):
 
 ```bash
-cd drawio
+cd ~/e-ai-designs
 pi code
 ```
 
-The following skills are available:
-
-| Skill | Description |
-|-------|-------------|
-| **drawio** | Main API skill — create and edit diagrams via REST API calls |
-| **electrical-wiring-standards** | Wire color conventions, component labeling, circuit design rules |
-| **drawio-layout** | Diagram organization, grid placement, connection routing, checklist |
-
-These skills guide the AI to produce professional, standards-compliant wiring diagrams.
+This keeps the AI focused on your electrical designs and skills, without being distracted by the drawio source code.
 
 ## How It Works
 
@@ -280,33 +290,38 @@ git push origin dev
 
 ## Folder Structure
 
+The project spans two directories:
+
 ```
-drawio/
-├── diagrams/              ← Your .drawio files (sync these between devices)
-├── server/                ← Node.js server
-│   ├── server.js          ← Entry point (port 3000, static files + API)
-│   ├── editor.html        ← Custom editor page (diagram selector, save buttons)
-│   ├── routes/            ← API endpoints
-│   │   ├── diagrams.js    ← Diagram CRUD
-│   │   ├── shapes.js      ← Shape operations
-│   │   ├── connections.js ← Edge/connection management
-│   │   ├── groups.js      ← Group/ungroup
-│   │   ├── pinout.js      ← Microcontroller/IC pinout
-│   │   └── stencils.js    ← Custom stencil libraries
-│   ├── lib/               ← Core libraries
-│   │   ├── xml-builder.js ← mxGraph XML construction
-│   │   └── file-manager.js← File watcher, save/load, SSE push
+~/vscode/drawio/              ← Server code (you don't pi code here)
+├── server/                   ← Node.js server
+│   ├── server.js             ← Entry point (port 3000, static files + API)
+│   ├── config.js             ← Points to e-ai-designs/ for diagrams/stencils
+│   ├── editor.html           ← Custom editor page (diagram selector, save buttons)
+│   ├── routes/               ← API endpoints
+│   │   ├── diagrams.js       ← Diagram CRUD
+│   │   ├── shapes.js         ← Shape operations
+│   │   ├── connections.js    ← Edge management
+│   │   ├── groups.js         ← Group/ungroup
+│   │   ├── pinout.js         ← IC pinout
+│   │   └── stencils.js       ← Custom stencil libraries
+│   ├── lib/                  ← Core libraries
+│   │   ├── xml-builder.js    ← mxGraph XML construction
+│   │   └── file-manager.js   ← File watcher, save/load, SSE push
 │   └── test/
-│       └── integration.js ← 16-test integration suite
-├── stencils/              ← Custom component libraries
-│   └── custom/
-├── .pi/skills/            ← AI skill definitions (for pi code)
-│   ├── drawio/            ← Main API skill
-│   ├── electrical-wiring-standards/  ← Wiring conventions
-│   └── drawio-layout/     ← Layout best practices
-├── docs/                  ← Documentation
-│   └── SETUP-GUIDE.md     ← This file
-└── src/main/webapp/       ← drawio editor (do not modify)
+│       └── integration.js    ← 16-test integration suite
+├── diagrams/                 ← README points to e-ai-designs/
+└── src/main/webapp/          ← drawio editor (do not modify)
+
+~/e-ai-designs/               ← AI workspace (pi code runs HERE)
+├── diagrams/                 ← Your .drawio files (sync these)
+├── stencils/                 ← Custom component libraries
+└── .pi/
+    ├── settings.json
+    └── skills/
+        ├── drawio/                       ← Main API skill
+        ├── electrical-wiring-standards/  ← Wiring conventions
+        └── drawio-layout/               ← Layout best practices
 ```
 
 ## SSE Live Update System

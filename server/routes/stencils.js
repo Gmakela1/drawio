@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 
-const STENCILS_DIR = path.join(__dirname, '..', '..', 'stencils', 'custom');
+const STENCILS_DIR = config.stencilsDir;
 
 function ensureDir() {
     if (!fs.existsSync(STENCILS_DIR)) fs.mkdirSync(STENCILS_DIR, { recursive: true });
