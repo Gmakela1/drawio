@@ -31,3 +31,10 @@ All diagrams are stored in the `diagrams/` folder at the project root.
 ## Full API Reference
 
 See [api-reference.md](api-reference.md) for all endpoints, style docs, and examples.
+
+## Related Skills
+
+These skills work alongside the drawio API to produce professional wiring diagrams:
+
+- **[electrical-wiring-standards](../electrical-wiring-standards/SKILL.md)** — Wire color conventions, component labeling, circuit design rules, and electrical engineering standards
+- **[drawio-layout](../drawio-layout/SKILL.md)** — Diagram organization, component placement, connection routing, and layout best practices
