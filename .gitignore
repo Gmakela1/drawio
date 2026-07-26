@@ -19,3 +19,7 @@ diagrams/*.tmp
 
 # Environment
 .env
+
+# User project files (diagrams and stencils are per-user)
+e-ai-designs/diagrams/
+e-ai-designs/stencils/

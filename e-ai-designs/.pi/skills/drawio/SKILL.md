@@ -10,23 +10,34 @@ description: Create, edit, and design electrical/power distribution diagrams usi
 Ensure the Node.js server is running in the drawio project root:
 
 ```bash
-cd server && node server.js
+cd ~/vscode/drawio/server && node server.js
 ```
 
 Open http://localhost:3000 in your browser to see the drawio editor.
 
+## Project Structure
+
+This skill runs from the `e-ai-designs/` project directory — your diagrams live here, separate from the drawio source code:
+
+```
+e-ai-designs/          ← Your AI workspace (pi code runs here)
+├── diagrams/          ← Your .drawio files
+├── stencils/          ← Custom component libraries
+└── .pi/skills/        ← AI skills for electrical design
+```
+
 ## How to Use
 
 Call the REST API at `http://localhost:3000/api/...` to create and modify diagrams.
-All diagrams are stored in the `diagrams/` folder at the project root.
+All diagrams are stored in the `e-ai-designs/diagrams/` folder.
 
 ## Quick Start
 
-1. Start the server
-2. Open the browser
+1. Start the server (from ~/vscode/drawio/server)
+2. Open http://localhost:3000/editor in your browser
 3. Create a diagram via API
 4. Add shapes, connections, and styles
-5. Refresh the browser to see changes (or SSE auto-refresh handles it)
+5. The browser updates automatically via SSE — no manual refresh needed
 
 ## Full API Reference
 

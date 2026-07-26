@@ -30,7 +30,7 @@ cd ..
 
 ### 3. Set up the projects directory (e-ai-designs)
 
-This is where your diagrams and AI skills live — separate from the drawio source code.
+This is where your diagrams and AI skills live — separate from the drawio source code. It's created **inside** the project folder and is gitignored so your work stays separate from the drawio code.
 
 **Option A: Run the setup script (recommended)**
 
@@ -42,16 +42,16 @@ bash setup.sh
 **Option B: Manual setup**
 
 ```bash
-cd ~
+cd ~/vscode/drawio
 mkdir -p e-ai-designs/diagrams
 mkdir -p e-ai-designs/stencils
 mkdir -p e-ai-designs/.pi/skills
 
 # Copy the AI skills
-cp -r ~/vscode/drawio/.pi/skills/* ~/e-ai-designs/.pi/skills/
+cp -r .pi/skills/* e-ai-designs/.pi/skills/
 
 # Create settings for pi code
-echo '{"skills":[".pi/skills"]}' > ~/e-ai-designs/.pi/settings.json
+echo '{"skills":[".pi/skills"]}' > e-ai-designs/.pi/settings.json
 ```
 
 To use a custom location instead of `e-ai-designs/`, pass it as an argument:
@@ -90,10 +90,10 @@ You'll see a custom toolbar at the top with:
 
 ### 6. (Optional) Enable AI features
 
-If you have pi code installed, navigate to the **e-ai-designs** folder (not the drawio folder):
+If you have pi code installed, navigate to the **e-ai-designs** folder inside the project:
 
 ```bash
-cd ~/e-ai-designs
+cd ~/vscode/drawio/e-ai-designs
 pi code
 ```
 
@@ -311,35 +311,24 @@ git push origin dev
 The project spans two directories:
 
 ```
-~/vscode/drawio/              ← Server code (you don't pi code here)
+~/vscode/drawio/              ← The whole project
 ├── server/                   ← Node.js server
 │   ├── server.js             ← Entry point (port 3000, static files + API)
-│   ├── config.js             ← Points to e-ai-designs/ for diagrams/stencils
-│   ├── editor.html           ← Custom editor page (diagram selector, save buttons)
+│   ├── config.js             ← Points to ./e-ai-designs/ for diagrams
+│   ├── editor.html           ← Custom editor page
 │   ├── routes/               ← API endpoints
-│   │   ├── diagrams.js       ← Diagram CRUD
-│   │   ├── shapes.js         ← Shape operations
-│   │   ├── connections.js    ← Edge management
-│   │   ├── groups.js         ← Group/ungroup
-│   │   ├── pinout.js         ← IC pinout
-│   │   └── stencils.js       ← Custom stencil libraries
-│   ├── lib/                  ← Core libraries
-│   │   ├── xml-builder.js    ← mxGraph XML construction
-│   │   └── file-manager.js   ← File watcher, save/load, SSE push
-│   └── test/
-│       └── integration.js    ← 16-test integration suite
-├── diagrams/                 ← README points to e-ai-designs/
+│   ├── lib/                  ← XML builder + file manager
+│   └── test/                 ← Integration tests
+├── e-ai-designs/             ← AI workspace (pi code runs HERE) — gitignored
+│   ├── diagrams/             ← Your .drawio files
+│   ├── stencils/             ← Custom component libraries
+│   └── .pi/
+│       ├── settings.json
+│       └── skills/           ← AI skills
+├── setup.sh                  ← Creates e-ai-designs/ structure
+├── .gitignore                ← e-ai-designs/ is gitignored here
+├── docs/                     ← Documentation
 └── src/main/webapp/          ← drawio editor (do not modify)
-
-~/e-ai-designs/               ← AI workspace (pi code runs HERE)
-├── diagrams/                 ← Your .drawio files (sync these)
-├── stencils/                 ← Custom component libraries
-└── .pi/
-    ├── settings.json
-    └── skills/
-        ├── drawio/                       ← Main API skill
-        ├── electrical-wiring-standards/  ← Wiring conventions
-        └── drawio-layout/               ← Layout best practices
 ```
 
 ## SSE Live Update System

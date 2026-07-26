@@ -10,10 +10,10 @@
  */
 const path = require('path');
 
-// Default: e-ai-designs is a sibling of the drawio project folder
-//   drawio/   ← this repo
-//   e-ai-designs/  ← user projects, skills, diagrams
-const DEFAULT_PROJECTS_DIR = path.join(__dirname, '..', '..', '..', 'e-ai-designs');
+// Default: e-ai-designs is inside the drawio project folder
+//   drawio/          ← this repo
+//     e-ai-designs/  ← user projects, diagrams, skills
+const DEFAULT_PROJECTS_DIR = path.join(__dirname, '..', '..', 'e-ai-designs');
 
 const projectsDir = process.env.DRAWIO_PROJECTS_DIR || DEFAULT_PROJECTS_DIR;
 
