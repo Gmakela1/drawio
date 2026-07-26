@@ -32,6 +32,15 @@ cd ..
 
 This is where your diagrams and AI skills live — separate from the drawio source code.
 
+**Option A: Run the setup script (recommended)**
+
+```bash
+cd ~/vscode/drawio
+bash setup.sh
+```
+
+**Option B: Manual setup**
+
 ```bash
 cd ~
 mkdir -p e-ai-designs/diagrams
@@ -43,6 +52,15 @@ cp -r ~/vscode/drawio/.pi/skills/* ~/e-ai-designs/.pi/skills/
 
 # Create settings for pi code
 echo '{"skills":[".pi/skills"]}' > ~/e-ai-designs/.pi/settings.json
+```
+
+To use a custom location instead of `e-ai-designs/`, pass it as an argument:
+
+```bash
+bash setup.sh ~/my-other-projects
+# Then set the env var before starting the server:
+export DRAWIO_PROJECTS_DIR=~/my-other-projects
+cd server && node server.js
 ```
 
 ### 4. Start the server
