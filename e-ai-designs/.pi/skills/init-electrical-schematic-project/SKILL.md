@@ -47,19 +47,41 @@ Collect these parameters from the user:
 
 ### 1. Create the Multi-Page .drawio File
 
-Create a new .drawio file via the API. This is the only step that creates the file container — all content (shapes, text, lines) is added in subsequent steps using the drawio API.
+Create a new .drawio file via the API. The file format uses `<mxfile>` wrapping multiple `<diagram>` elements:
 
 ```bash
 POST /api/diagrams
 Body: { "name": "PROJECT-NAME.drawio" }
 ```
 
-**Important:** After creating the file, all shapes, rectangles, text blocks, lines, and tables must be added using the drawio API's shapes and geometry endpoints. Refer to the **[drawio skill's api-reference.md](../drawio/api-reference.md)** for:
-- Creating shapes: `POST /api/diagrams/:name/shapes`
-- Setting position and size: `PUT /api/diagrams/:name/shapes/:id` with x, y, width, height
-- Setting styles: fillColor, strokeColor, fontSize, align, etc.
-- Creating connections: `POST /api/diagrams/:name/connections`
-- The mxGraphModel XML format for building groups of cells
+This creates a blank single-page file. To add more pages, build the full `<mxfile>` XML with all `<diagram>` elements and use `PUT /api/diagrams/:name` to overwrite the file:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile>
+  <diagram name="Cover Page">
+    <mxGraphModel>...cover page content...</mxGraphModel>
+  </diagram>
+  <diagram name="Power System">
+    <mxGraphModel>...schematic content...</mxGraphModel>
+  </diagram>
+</mxfile>
+```
+
+**Important notes:**
+
+- After creating the file, all shapes, rectangles, text blocks, lines, and tables must be added using the drawio API's shapes and geometry endpoints. Refer to the **[drawio skill's api-reference.md](../drawio/api-reference.md)** for:
+  - Creating shapes: `POST /api/diagrams/:name/shapes`
+  - Setting position and size: `PUT /api/diagrams/:name/shapes/:id` with x, y, width, height
+  - Setting styles: fillColor, strokeColor, fontSize, align, etc. (must be JSON objects, not strings)
+  - Creating connections: `POST /api/diagrams/:name/connections`
+  - The mxGraphModel XML format for building groups of cells
+
+- **For single-page files**, use the shapes API to add components incrementally
+- **For multi-page files**, use `PUT /api/diagrams/:name` with the full `<mxfile>` XML. The shapes API does not support multi-page files.
+- **File size limit**: The write tool has a ~10KB limit. For large diagrams, add components via the shapes API incrementally, or use a Node.js script to generate the XML.
+- **locked=1** on title block cells prevents editor GUI edits but does NOT protect against API modifications.
+- **Connection defaults**: API-created connections must explicitly include `endArrow=none;startArrow=none` in their style — the editor's default does not apply.
 
 ### 2. Build the Cover Page (Page 1)
 
