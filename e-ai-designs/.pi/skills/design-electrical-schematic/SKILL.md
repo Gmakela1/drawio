@@ -26,6 +26,7 @@ Adds, modifies, or reviews electrical schematic content inside an already-initia
 
 ## Related Skills
 
+- **[drawio](../drawio/SKILL.md)** — The core API skill. **Required reading for all API calls.** All shapes, connections, styles, and geometry must be created using the endpoints documented in [api-reference.md](../drawio/api-reference.md)
 - **[electrical-wiring-standards](../electrical-wiring-standards/SKILL.md)** — Wire color conventions, component labeling, and circuit design rules (must be referenced for all wire color decisions)
 - **[init-electrical-schematic-project](../init-electrical-schematic-project/SKILL.md)** — The companion skill that initializes the project structure this skill operates on
 - **[drawio-layout](../drawio-layout/SKILL.md)** — Diagram organization, component placement, and connection routing
@@ -134,7 +135,7 @@ When a revision is required the agent must:
 
 1. Confirm the project was initialized with the companion init skill
 2. Identify which sheet(s) will be affected
-3. Place or modify symbols using only IEEE 315 forms
+3. **Place or modify symbols using the drawio API** — Use the shapes, connections, and geometry endpoints from the [drawio skill's api-reference.md](../drawio/api-reference.md). All components must be created via `POST /api/diagrams/:name/shapes` with correct x, y, width, height, label, and style. Connections must use `POST /api/diagrams/:name/connections` with orthogonal routing
 4. Assign correct reference designators (class letter + number)
 5. Add IEEE C37.2 device numbers where applicable
 6. Route wires on the correct layer

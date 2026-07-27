@@ -47,12 +47,19 @@ Collect these parameters from the user:
 
 ### 1. Create the Multi-Page .drawio File
 
-Create a new .drawio file via the API:
+Create a new .drawio file via the API. This is the only step that creates the file container — all content (shapes, text, lines) is added in subsequent steps using the drawio API.
 
 ```bash
 POST /api/diagrams
 Body: { "name": "PROJECT-NAME.drawio" }
 ```
+
+**Important:** After creating the file, all shapes, rectangles, text blocks, lines, and tables must be added using the drawio API's shapes and geometry endpoints. Refer to the **[drawio skill's api-reference.md](../drawio/api-reference.md)** for:
+- Creating shapes: `POST /api/diagrams/:name/shapes`
+- Setting position and size: `PUT /api/diagrams/:name/shapes/:id` with x, y, width, height
+- Setting styles: fillColor, strokeColor, fontSize, align, etc.
+- Creating connections: `POST /api/diagrams/:name/connections`
+- The mxGraphModel XML format for building groups of cells
 
 ### 2. Build the Cover Page (Page 1)
 
