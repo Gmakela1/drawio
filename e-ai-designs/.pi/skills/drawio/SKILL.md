@@ -47,6 +47,7 @@ See [api-reference.md](api-reference.md) for all endpoints, style docs, and exam
 
 These skills work alongside the drawio API to produce professional wiring diagrams:
 
+- **[design-electrical-schematic](../design-electrical-schematic/SKILL.md)** — Ongoing design companion — add, modify, or review schematic content while enforcing IEEE 315-1975 symbols, IEEE C37.2 device function numbers, and ISO 7200 revision/title-block discipline
 - **[init-electrical-schematic-project](../init-electrical-schematic-project/SKILL.md)** — Initialize professional multi-page IEEE/ISO-compliant electrical schematic projects with cover pages, title blocks, revision tracking, and symbol/designator rules
 - **[drawio-ic-builder](../drawio-ic-builder/SKILL.md)** — Create IC/microcontroller/motor controller components with pinouts, proper sizing, and label positioning for stencil libraries
 - **[electrical-wiring-standards](../electrical-wiring-standards/SKILL.md)** — Wire color conventions, component labeling, circuit design rules, and electrical engineering standards
