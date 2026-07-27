@@ -62,8 +62,8 @@
                 .then(function(r){return r.json()})
                 .then(function(resp){
                     if (!resp.success) throw new Error('API error');
-                    var doc = mxUtils.parseXml(resp.data.xml);
-                    editorUi.editor.setGraphXml(doc.documentElement);
+                    // Use drawio's native openFile for multi-page <mxfile> and single-page <mxGraphModel>
+                    editorUi.openFile(resp.data.xml, name);
                     localStorage.setItem(LS_FILE, name);
                     sel.value = name;
                     status.textContent = '✓ ' + name;
@@ -77,9 +77,9 @@
         function saveFile(name) {
             if (!name || !editorUi) { status.textContent = 'Nothing to save'; return; }
             status.textContent = 'Saving ' + name + '...';
-            var xml = mxUtils.getXml(editorUi.editor.getGraphXml());
+            // Use getFileData to capture all pages (multi-page <mxfile> format)
+            var xml = editorUi.getFileData(true);
             fetch('/api/diagrams/' + encodeURIComponent(name), {
-                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ xml: xml })
             })
@@ -107,7 +107,7 @@
 
             // Check if exists, then save
             status.textContent = 'Saving as ' + newName + '...';
-            var xml = mxUtils.getXml(editorUi.editor.getGraphXml());
+            var xml = editorUi.getFileData(true);
             fetch('/api/diagrams', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -160,8 +160,7 @@
                     .then(function(r){return r.json()})
                     .then(function(resp2){
                         if (!resp2.success) throw new Error('Load failed');
-                        var doc = mxUtils.parseXml(resp2.data.xml);
-                        editorUi.editor.setGraphXml(doc.documentElement);
+                        editorUi.openFile(resp2.data.xml, name);
                         localStorage.setItem(LS_FILE, name);
                         refreshList();
                         setTimeout(function() { sel.value = name; }, 100);
