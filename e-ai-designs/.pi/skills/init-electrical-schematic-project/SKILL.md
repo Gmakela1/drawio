@@ -119,26 +119,51 @@ Place a grouped, locked title block in the bottom-right corner of every schemati
 - Responsible department (optional)
 - Technical reference (optional)
 
-**Layout:**
-Total width ≈ 320px (proportional to A3 landscape). Position at x=pageW-340, y=pageH-140.
-Compact block — maximum space remains for the schematic content.
+**Exact Dimensions & Positioning:**
 
 ```
-┌──────────────────────────────────────────────┐
-│ Owner: [LEGAL_OWNER]                         │
-│ Title: [DRAWING_TITLE]                      │
-│ Drawing No: [PREFIX-###]     Rev: [A]       │
-│ Date: [DATE]   Doc Type: Electrical Schematic│
-│ Creator: [NAME]   Approval: [NAME]          │
-│ Sheet: [N] of [M]     Status: [STATUS]      │
-└──────────────────────────────────────────────┘
+Position:   x = pageW - 360,  y = pageH - 170
+Total size: 340w × 150h
 ```
 
-Build as:
-- Outer rectangle: `fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=2;`
-- Inner dividing lines: thin rectangles (1px height for horizontal, 1px width for vertical)
-- Text fields: individual text shapes positioned within cells
-- All title block cells must use `locked=1` in style to prevent accidental edits
+**Cell grid (6 rows × 2 columns):**
+
+| Row | Height | Col 0 (170w) | Col 1 (170w) |
+|-----|--------|--------------|--------------|
+| 0   | 25px   | Owner: [LEGAL_OWNER] (bold) | ← span both cols |
+| 1   | 25px   | Title: [DRAWING_TITLE] | ← span both cols |
+| 2   | 25px   | Drawing No: [PREFIX-###] | Rev: [A] |
+| 3   | 25px   | Date: [DATE] | Doc Type: Electrical Schematic |
+| 4   | 25px   | Creator: [NAME] | Approval: [NAME] |
+| 5   | 25px   | Sheet: [N] of [M] | Status: [STATUS] |
+
+Rows 0 and 1 span both columns with no column divider. Rows 2-5 have a vertical divider at x = col0_x + 170.
+
+**Element list (from outside in):**
+
+| Element | Type | Position | Size | Style |
+|---------|------|----------|------|-------|
+| Outer border | rect | (x, y) | 340 × 150 | `fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=2;` |
+| Row divider 0-1 | line/rect | (x, y+25) | 340 × 1 | `fillColor=#000000;strokeColor=none;` |
+| Row divider 1-2 | line/rect | (x, y+50) | 340 × 1 | `fillColor=#000000;strokeColor=none;` |
+| Row divider 2-3 | line/rect | (x, y+75) | 340 × 1 | `fillColor=#000000;strokeColor=none;` |
+| Row divider 3-4 | line/rect | (x, y+100) | 340 × 1 | `fillColor=#000000;strokeColor=none;` |
+| Row divider 4-5 | line/rect | (x, y+125) | 340 × 1 | `fillColor=#000000;strokeColor=none;` |
+| Col divider (rows 2-5) | line/rect | (x+170, y+50) | 1 × 100 | `fillColor=#000000;strokeColor=none;` |
+| Text: Row 0 | text | (x+170, y+2) | 340 × 25 | `align=center;fontSize=10;fontStyle=1;` |
+| Text: Row 1 | text | (x+170, y+27) | 340 × 25 | `align=center;fontSize=10;` |
+| Text: Row 2 Col 0 | text | (x+85, y+52) | 170 × 25 | `align=left;fontSize=9;` |
+| Text: Row 2 Col 1 | text | (x+255, y+52) | 170 × 25 | `align=center;fontSize=9;` |
+| Text: Row 3 Col 0 | text | (x+85, y+77) | 170 × 25 | `align=left;fontSize=9;` |
+| Text: Row 3 Col 1 | text | (x+255, y+77) | 170 × 25 | `align=center;fontSize=9;` |
+| Text: Row 4 Col 0 | text | (x+85, y+102) | 170 × 25 | `align=left;fontSize=9;` |
+| Text: Row 4 Col 1 | text | (x+255, y+102) | 170 × 25 | `align=center;fontSize=9;` |
+| Text: Row 5 Col 0 | text | (x+85, y+127) | 170 × 25 | `align=left;fontSize=9;` |
+| Text: Row 5 Col 1 | text | (x+255, y+127) | 170 × 25 | `align=center;fontSize=9;` |
+
+All title block cells must have `locked=1` in the style to prevent accidental edits during normal drawing.
+
+**Note on page dimensions:** [PAGE_W] and [PAGE_H] must be substituted with the actual pixel values for the chosen page size. For A3 landscape: PAGE_W=1654, PAGE_H=1169. For Tabloid: PAGE_W=1684, PAGE_H=1100.
 
 ### 4. Set Up Layers (on every schematic sheet)
 
